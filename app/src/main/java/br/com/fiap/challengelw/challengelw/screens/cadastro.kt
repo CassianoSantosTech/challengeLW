@@ -50,29 +50,44 @@ import androidx.navigation.NavController
 import br.com.fiap.challengelw.R
 import br.com.fiap.challengelw.challengelw.components.Header
 import br.com.fiap.challengelw.database.repository.CadastroRepository
+import br.com.fiap.challengelw.model.Cadastro
 import retrofit2.http.Header
 
 @Composable
-fun CadastroScreen (navController: NavController) {
+fun CadastroScreen(navController: NavController) {
     val context = LocalContext.current
     val cadastroRepository = CadastroRepository(context)
 
-    var login by remember() {
-        mutableStateOf("")
+    var login by remember { mutableStateOf("") }
+    var senha by remember { mutableStateOf("") }
+    var loginConfirm by remember { mutableStateOf("") }
+    var senhaConfirm by remember { mutableStateOf("") }
+
+    var loginError by remember { mutableStateOf("") }
+    var senhaError by remember { mutableStateOf("") }
+
+    fun validarLogin() {
+        loginError =
+            if (login == loginConfirm) "" else "Os emails ou números de telefone não são iguais."
     }
-    var senha by remember() {
-        mutableStateOf("")
-    }
-    var login_confirm by remember() {
-        mutableStateOf("")
-    }
-    var senha_confirm by remember() {
-        mutableStateOf("")
+
+    fun validarSenha() {
+        senhaError = when {
+            senha != senhaConfirm -> "As senhas não são iguais."
+            !senha.contains(Regex("[A-Za-z]")) || !senha.contains(Regex("[0-9]")) || !senha.contains(
+                Regex("[^A-Za-z0-9]")
+            ) ->
+                "A senha deve conter letras, números e um caractere especial."
+
+            else -> ""
+        }
     }
 
     fun limparCampos() {
         login = ""
         senha = ""
+        loginConfirm = ""
+        senhaConfirm = ""
     }
 
     val scrollState = rememberScrollState()
@@ -116,7 +131,10 @@ fun CadastroScreen (navController: NavController) {
 
         OutlinedTextField(
             value = login,
-            onValueChange = { login = it },
+            onValueChange = {
+                login = it
+                validarLogin()
+            },
             label = {
                 Text(
                     text = "Digite seu email ou número de telefone",
@@ -133,14 +151,26 @@ fun CadastroScreen (navController: NavController) {
             ),
             shape = RoundedCornerShape(20),
             modifier = Modifier
-                .fillMaxWidth(0.8f)
+                .fillMaxWidth(0.8f),
+            isError = loginError.isNotEmpty()
         )
+        if (loginError.isNotEmpty()) {
+            Text(
+                text = loginError,
+                color = colorResource(id = R.color.red_lw),
+                fontSize = 12.sp,
+                modifier = Modifier.padding(start = 16.dp)
+            )
+        }
 
         Spacer(modifier = Modifier.height(15.dp))
 
         OutlinedTextField(
-            value = login_confirm,
-            onValueChange = { login_confirm = it },
+            value = loginConfirm,
+            onValueChange = {
+                loginConfirm = it
+                validarLogin()
+            },
             label = {
                 Text(
                     text = "Confirme seu email ou número de telefone",
@@ -157,14 +187,26 @@ fun CadastroScreen (navController: NavController) {
             ),
             shape = RoundedCornerShape(20),
             modifier = Modifier
-                .fillMaxWidth(0.8f)
+                .fillMaxWidth(0.8f),
+            isError = loginError.isNotEmpty()
         )
+        if (loginError.isNotEmpty()) {
+            Text(
+                text = loginError,
+                color = colorResource(id = R.color.red_lw),
+                fontSize = 12.sp,
+                modifier = Modifier.padding(start = 16.dp)
+            )
+        }
 
         Spacer(modifier = Modifier.height(15.dp))
 
         OutlinedTextField(
             value = senha,
-            onValueChange = { senha = it },
+            onValueChange = {
+                senha = it
+                validarSenha()
+            },
             label = {
                 Text(
                     text = "Digite sua senha",
@@ -182,14 +224,26 @@ fun CadastroScreen (navController: NavController) {
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
             shape = RoundedCornerShape(20),
             modifier = Modifier
-                .fillMaxWidth(0.8f)
+                .fillMaxWidth(0.8f),
+            isError = senhaError.isNotEmpty()
         )
+        if (senhaError.isNotEmpty()) {
+            Text(
+                text = senhaError,
+                color = colorResource(id = R.color.red_lw),
+                fontSize = 12.sp,
+                modifier = Modifier.padding(start = 16.dp)
+            )
+        }
 
         Spacer(modifier = Modifier.height(15.dp))
 
         OutlinedTextField(
-            value = senha_confirm,
-            onValueChange = { senha_confirm = it },
+            value = senhaConfirm,
+            onValueChange = {
+                senhaConfirm = it
+                validarSenha()
+            },
             label = {
                 Text(
                     text = "Confirme sua senha",
@@ -207,19 +261,43 @@ fun CadastroScreen (navController: NavController) {
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
             shape = RoundedCornerShape(20),
             modifier = Modifier
-                .fillMaxWidth(0.8f)
+                .fillMaxWidth(0.8f),
+            isError = senhaError.isNotEmpty()
         )
+        if (senhaError.isNotEmpty()) {
+            Text(
+                text = senhaError,
+                color = colorResource(id = R.color.red_lw),
+                fontSize = 12.sp,
+                modifier = Modifier.padding(start = 16.dp)
+            )
+        }
 
         Spacer(modifier = Modifier.height(15.dp))
 
         Button(
             onClick = {
-                Log.d("Clicou", "Botão de cadastrar!")
+                val cadastroObject = Cadastro(
+                    login = login,
+                    senha = senha,
+                )
+
+                val responseCadastro = cadastroRepository.salvar(cadastroObject)
+
+                if (responseCadastro != null) {
+                    Log.d("Entrou", "Validação deu certo")
+                    Log.d("Resposta Cadastro", "Cadastro válido. ID do usuário: $responseCadastro")
+                    limparCampos()
+                    navController.navigate("login")
+                } else {
+                    Log.d("Quebrou", "Cadastro deu errado")
+                }
             },
             colors = ButtonDefaults.buttonColors(colorResource(id = R.color.red_lw)),
             shape = RoundedCornerShape(20),
             modifier = Modifier
-                .width(234.dp)
+                .width(234.dp),
+            enabled = loginError.isEmpty() && senhaError.isEmpty() && login.isNotEmpty() && senha.isNotEmpty() && loginConfirm.isNotEmpty() && senhaConfirm.isNotEmpty()
         ) {
             Text(
                 text = "Cadastrar",

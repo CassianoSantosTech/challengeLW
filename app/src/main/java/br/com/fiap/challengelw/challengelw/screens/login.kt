@@ -20,8 +20,15 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.ClickableText
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
@@ -40,6 +47,8 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withStyle
@@ -48,11 +57,12 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import br.com.fiap.challengelw.R
 import br.com.fiap.challengelw.challengelw.components.Header
+import br.com.fiap.challengelw.database.repository.CadastroRepository
 
 @Composable
 fun LoginScreen(navController: NavController) {
     val context = LocalContext.current
-//    val cadastroRepository = CadastroRepository(context)
+    val cadastroRepository = CadastroRepository(context)
 
     var login by remember() {
         mutableStateOf("")
@@ -61,6 +71,11 @@ fun LoginScreen(navController: NavController) {
     var senha by remember() {
         mutableStateOf("")
     }
+
+    var senhaVisible by remember {
+        mutableStateOf(false)
+    }
+
 
     val scrollState = rememberScrollState()
 
@@ -125,7 +140,13 @@ fun LoginScreen(navController: NavController) {
                 unfocusedTextColor = colorResource(id = R.color.white_lw),
             ),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-            shape = RoundedCornerShape(20),
+            visualTransformation = if (senhaVisible) VisualTransformation.None else PasswordVisualTransformation(),
+            trailingIcon = {
+                val image = if (senhaVisible) Icons.Filled.Check else Icons.Filled.CheckCircle
+                IconButton(onClick = { senhaVisible = !senhaVisible }) {
+                    Icon(imageVector = image, contentDescription = null)
+                }
+            },            shape = RoundedCornerShape(20),
             modifier = Modifier.fillMaxWidth(0.8f)
         )
 
@@ -133,7 +154,14 @@ fun LoginScreen(navController: NavController) {
 
         Button(
             onClick = {
-                Log.d("Clicou", "Botão de login.")
+                val responseAcesso = cadastroRepository.validarAcesso(login, senha)
+                if (responseAcesso != null && responseAcesso != 0) {
+                    Log.d("Entrou", "Validacao deu certo")
+                    Log.d("Resposta Acesso", "Usuário válido. ID do usuário: $responseAcesso")
+//                    navController.navigate("menu/$responseAcesso")
+                } else {
+                    Log.d("Quebrou", "Validacao deu errado")
+                }
             },
             colors = ButtonDefaults.buttonColors(colorResource(id = R.color.red_lw)),
             shape = RoundedCornerShape(20),
